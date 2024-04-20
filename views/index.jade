@@ -1,0 +1,14 @@
+extends layout
+
+block content
+  header
+    h1 Bookstore
+    
+  main
+    .d-flex.align-items-center.justify-content-center
+      img.flex-grow-0.flex-shrink-0(src="images/cover.png", alt="Book Cover Image", width=258, height=410)
+      form.flex-grow-1.flex-shrink-1.d-flex.flex-column.justify-content-center.m-5(action="/api/create-payment", method="post")
+        h2 Bí mật của may mắn
+        h4 Giá: 10,000 VNĐ
+        button.buy.btn.btn-primary Mua ngay
+
