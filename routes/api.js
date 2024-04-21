@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const sqlite3 = require('sqlite3').verbose();
+const db = require('./database')
 require('dotenv').config()
 
 const PayOS = require('@payos/node')
@@ -16,29 +16,6 @@ if (!clientId || !apiKey || !checksumKey || !domainUrl) {
 }
 
 const payos = new PayOS(clientId, apiKey, checksumKey)
-const db = new sqlite3.Database('database.db');
-
-db.run(`
-  CREATE TABLE IF NOT EXISTS payment (
-    id INTEGER PRIMARY KEY,
-    paymentLinkId TEXT NOT NULL UNIQUE,
-    time TEXT NOT NULL
-  )`, (err) => {
-  if (err) {
-    console.error('Error creating table:', err.message);
-  } else {
-    console.log('Table "payment" created successfully.');
-  }
-})
-
-process.on('exit', function() {
-  db.close((err) => {
-    if (err) {
-      return console.error(err.message);
-    }
-    console.log('Database connection closed.');
-  });
-});
 
 router.post('/create-payment', (req, res) => {
   //Get the largest id from database to use as orderCode
@@ -72,13 +49,17 @@ router.post('/create-payment', (req, res) => {
 })
 
 router.post('/webhook', async (req, res) => {
-  console.log(req.body)
+  const data = {
+    $orderCode: req.body.data.orderCode,
+    $paymentLinkId: req.body.data.paymentLinkId,
+    $transactionDateTime: req.body.data.transactionDateTime
+  }
   const insertQuery = `
     INSERT INTO payment (id, paymentLinkId, time)
     VALUES ($orderCode, $paymentLinkId, $transactionDateTime)
   `;
 
-  db.run(insertQuery, req.body.data, function(err) {
+  db.run(insertQuery, data, function(err) {
     if (err) {
       res.send({success: true})
       console.error(err)
@@ -86,6 +67,24 @@ router.post('/webhook', async (req, res) => {
       res.send({success: true})
     }
   });
+})
+
+router.get('/download', async function(req, res, next) {
+  let ok = false
+  while (!ok) {
+    db.get(`SELECT * FROM payment WHERE paymentLinkId = ?`, req.query.id, async (err, row) => {
+      if (err) {
+        res.redirect(303, '/cancel?type=server')
+        ok = true
+      } else if (!row){
+        await new Promise(r => setTimeout(r, 3000));
+      } else {
+        res.download('Bi mat cua may man.pdf')
+        ok = true
+      }
+    })
+    await new Promise(r => setTimeout(r, 3000));
+  }
 })
 
 module.exports = router;

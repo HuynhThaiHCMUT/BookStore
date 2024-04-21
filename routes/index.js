@@ -1,5 +1,5 @@
-var express = require('express');
-var router = express.Router();
+const express = require('express');
+const router = express.Router();
 
 router.get('/', function(req, res, next) {
   res.render('index');
@@ -22,7 +22,8 @@ router.get('/cancel', function(req, res, next) {
 })
 
 router.get('/success', function(req, res, next) {
-  res.render('success');
+  if (req.query.id) res.render('success', {id: req.query.id})
+  else res.redirect(303, '/')
 })
 
 module.exports = router;
