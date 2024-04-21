@@ -63,7 +63,7 @@ router.post('/webhook', async (req, res) => {
     INSERT INTO payment (id, paymentLinkId, time)
     VALUES ($orderCode, $paymentLinkId, $transactionDateTime)
   `;
-
+  // Insert webhook data to database
   db.run(insertQuery, data, function(err) {
     if (err) {
       res.send({success: true})
@@ -77,22 +77,23 @@ router.post('/webhook', async (req, res) => {
 router.get('/download', async function(req, res, next) {
   let ok = false
   let count = 0
+  // Look for payment id in 2 try, 3s delay
   while (!ok && count < 2) {
     ++count;
     db.get(`SELECT * FROM payment WHERE paymentLinkId = ?`, req.query.id, async (err, row) => {
       if (err) {
         res.redirect(303, '/cancel?type=server')
         ok = true
-      } else if (!row){
-        await new Promise(r => setTimeout(r, 3000));
-      } else {
+      } else if (row){
+        // Can add expire date check here
         res.download('Bi mat cua may man.pdf')
         ok = true
       }
     })
+    // Sleep 3s
     await new Promise(r => setTimeout(r, 3000));
   }
-  res.status(403).redirect(303, '/cancel?type=payment&id=' + req.query.id)
+  if (!ok) res.status(403).redirect(303, '/cancel?type=payment&id=' + req.query.id)
 })
 
 module.exports = router;
