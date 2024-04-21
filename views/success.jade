@@ -3,7 +3,11 @@ extends layout
 block content
     script.
         var id = "#{id}"
-        fetch(`/api/download?id=${id}`)
+        fetch(`/api/download?id=${id}`).then(response => {
+            if (response.redirected) {
+            window.location.href = response.url;
+            }
+        })
 
     .h-100.d-flex.flex-column.align-items-center.justify-content-center
         h2.mb-5 Thanh toán thành công 

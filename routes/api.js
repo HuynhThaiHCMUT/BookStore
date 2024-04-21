@@ -49,10 +49,15 @@ router.post('/create-payment', (req, res) => {
 })
 
 router.post('/webhook', async (req, res) => {
+  const webhookData = payos.verifyPaymentWebhookData(req.body);
+  if (!webhookData) {
+    res.status(400).send({success: false})
+    return
+  }
   const data = {
-    $orderCode: req.body.data.orderCode,
-    $paymentLinkId: req.body.data.paymentLinkId,
-    $transactionDateTime: req.body.data.transactionDateTime
+    $orderCode: webhookData.orderCode,
+    $paymentLinkId: webhookData.paymentLinkId,
+    $transactionDateTime: webhookData.transactionDateTime
   }
   const insertQuery = `
     INSERT INTO payment (id, paymentLinkId, time)
@@ -71,7 +76,9 @@ router.post('/webhook', async (req, res) => {
 
 router.get('/download', async function(req, res, next) {
   let ok = false
-  while (!ok) {
+  let count = 0
+  while (!ok && count < 2) {
+    ++count;
     db.get(`SELECT * FROM payment WHERE paymentLinkId = ?`, req.query.id, async (err, row) => {
       if (err) {
         res.redirect(303, '/cancel?type=server')
@@ -85,6 +92,7 @@ router.get('/download', async function(req, res, next) {
     })
     await new Promise(r => setTimeout(r, 3000));
   }
+  res.status(403).redirect(303, '/cancel?type=payment&id=' + req.query.id)
 })
 
 module.exports = router;

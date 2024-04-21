@@ -14,6 +14,11 @@ router.get('/cancel', function(req, res, next) {
       title = "Lỗi server"
       message = "Đã có lỗi xảy ra tại server, vui lòng thử lại sau"
       break
+    case "payment":
+      let link = process.env.DOMAIN_URL +  "success?id=" + req.query.id
+      title = "Đơn hàng này không hợp lệ hoặc chưa được thanh toán"
+      message = "Nếu bạn đã thanh toán, vui lòng quay lại <a href=\"" + link + "\">link</a> sau"
+      break
     default:
       title = "Đơn hàng đã được huỷ thành công"
       message = ""
